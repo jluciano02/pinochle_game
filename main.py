@@ -1,4 +1,4 @@
-from pinochle_game.card import Card
+from card import Card
 import random
 
 def generateDeck():
@@ -77,51 +77,92 @@ def organize_cards(hand): #Bubble-sort Algorithm
     hand.reverse() #Just to have spades first instead of diamonds first, personal preference on my end
 
 
-def count_meld(hand):
+def count_meld(hand, trump_suit):
+
+    hand_strings = [f"{card.value}_{card.suit}" for card in hand] # A bit easier to work with for this particular purpose
+    
+    # Count runs
     runs = 0
+
+    if (hand_strings.count(f"a_{trump_suit}") == 2 and hand_strings.count(f"10_{trump_suit}") == 2 and hand_strings.count(f"k_{trump_suit}") == 2 and hand_strings.count(f"q_{trump_suit}") == 2 and hand_strings.count(f"j_{trump_suit}") == 2):
+        runs = 2
+    elif (hand_strings.count(f"a_{trump_suit}") >= 1 and hand_strings.count(f"10_{trump_suit}") >= 1 and hand_strings.count(f"k_{trump_suit}") >= 1 and hand_strings.count(f"q_{trump_suit}") >= 1 and hand_strings.count(f"j_{trump_suit}") >= 1):
+        runs = 1
     
-    #Count number of runs
+    # Count aces, kings, queens, jacks around (one of every suit = one around)
+    around = {}
 
-    face_values = ["a", "k", "q", "j"]
-    suits = ["spade", "heart", "club", "diamond"]
-
-    # initialize counters
-    aces_around = 0
-    kings_around = 0
-    queens_around = 0
-    jacks_around = 0
-
-    hand_strings = [] # to make this easier
-
-    for card in hand:
-        hand_strings.append(f"{card.value}_{card.suit}")
-
-    if(hand_strings.count("a_spade") == 2 and hand_strings.count("a_heart") == 2 and hand_strings.count("a_club") == 2 and hand_strings.count("a_diamond") == 2):
-        aces_around = 2
-    if(hand_strings.count("a_spade") >= 1 and hand_strings.count("a_heart") >= 1 and hand_strings.count("a_club") >= 1 and hand_strings.count("a_diamond") >= 1):
-        aces_around = 1
-    if(hand_strings.count("k_spade") == 2 and hand_strings.count("k_heart") == 2 and hand_strings.count("k_club") == 2 and hand_strings.count("k_diamond") == 2):
-        kings_around = 2
-    if(hand_strings.count("k_spade") >= 1 and hand_strings.count("k_heart") >= 1 and hand_strings.count("k_club") >= 1 and hand_strings.count("k_diamond") >= 1):
-        kings_around = 1
-    if(hand_strings.count("q_spade") == 2 and hand_strings.count("q_heart") == 2 and hand_strings.count("q_club") == 2 and hand_strings.count("q_diamond") == 2):
-        queens_around = 2
-    if(hand_strings.count("q_spade") >= 1 and hand_strings.count("q_heart") >= 1 and hand_strings.count("q_club") >= 1 and hand_strings.count("q_diamond") >= 1):
-        queens_around = 1
-    if(hand_strings.count("j_spade") == 2 and hand_strings.count("j_heart") == 2 and hand_strings.count("j_club") == 2 and hand_strings.count("j_diamond") == 2):
-        jacks_around = 2
-    if(hand_strings.count("j_spade") >= 1 and hand_strings.count("j_heart") >= 1 and hand_strings.count("j_club") >= 1 and hand_strings.count("j_diamond") >= 1):
-        jacks_around = 1
-
-    print(hand_strings)
-
-    print("Jacks: ", jacks_around, " Queens: ", queens_around, " Kings: ", kings_around, " Aces: ", aces_around)
+    for card in ["a", "k", "q", "j"]:
+        if (hand_strings.count(f"{card}_spade") == 2 and hand_strings.count(f"{card}_heart") == 2 and hand_strings.count(f"{card}_club") == 2 and hand_strings.count(f"{card}_diamond") == 2):
+            around[card] = 2
+        elif (hand_strings.count(f"{card}_spade") >= 1 and hand_strings.count(f"{card}_heart") >= 1 and hand_strings.count(f"{card}_club") >= 1 and hand_strings.count(f"{card}_diamond") >= 1):
+            around[card] = 1
     
-    pinochles = 0
-    marriages_trump = 0
+    # Counting Marriages
     marriages = 0
-    trump_9 = 0
+    marriages_trump = 0
 
+    for suit in ["spade", "heart", "club", "diamond"]:
+        if(hand_strings.count(f"k_{suit}") == 2 and hand_strings.count(f"q_{suit}") == 2):
+            if(suit == trump_suit):
+                marriages_trump += 2 - runs
+            else:
+                marriages += 2
+        elif(hand_strings.count(f"k_{suit}") >= 1 and hand_strings.count(f"q_{suit}") >= 1):
+            if(suit == trump_suit):
+                marriages_trump += 1 - runs
+            else:
+                marriages += 1
+    
+    # Counting Pinochles
+    pinochles = 0
+    
+    if(hand_strings.count("j_diamond") == 2 and hand_strings.count("q_spade") == 2):
+        pinochles = 2
+    elif(hand_strings.count("j_diamond") >= 1 and hand_strings.count("q_spade") >= 1):
+        pinochles = 1
+
+    # Counting 9s of trump
+    trump_9 = hand_strings.count(f"9_{trump_suit}")
+
+    total = 0
+
+    for card in around:
+        match card:
+            case "a":
+                total += around["a"] * 10
+            case "k":
+                total += around["k"] * 8
+            case "q":
+                total += around["q"] * 6
+            case "j":
+                total += around["j"] * 4
+
+    ######## For debugging purposes ########
+    # arounds = ""
+    # for card in around:
+    #     match card:
+    #         case "a":
+    #             print("Aces Around: ", around["a"])
+    #         case "k":
+    #             print("Kings Around: ", around["k"])
+    #         case "q":
+    #             print("Queens Around: ", around["q"])
+    #         case "j":
+    #             print("Jacks Around: ", around["j"])
+    
+    # print("Runs: ", runs, "\n",
+    #       "Pinochles: ", pinochles, "\n",
+    #       "Trump Marriages: ", marriages_trump, "\n",
+    #       "Marriages: ", marriages, "\n",
+    #       "9s of Trump: ", trump_9, "\n"
+    #       )
+    ######## For debugging purposes ########
+
+    # Total meld
+    total += (runs * 15) + (pinochles * 4) + (marriages_trump * 4) + (marriages * 2) + trump_9
+
+    return total
 
 def main():
 
@@ -138,20 +179,12 @@ def main():
     organize_cards(player2)
     organize_cards(player3)
     display_hand(player1)
+    print(count_meld(player1, "spade"))
     display_hand(player2)
+    print(count_meld(player2, "spade"))
     display_hand(player3)
+    print(count_meld(player3, "spade"))
     display_hand(kitty)
 
 
-#main()
-
-test_hand = []
-test_hand.append(Card("a", "spade"))
-test_hand.append(Card("a", "heart"))
-test_hand.append(Card("a", "diamond"))
-test_hand.append(Card("a", "club"))
-test_hand.append(Card("a", "club"))
-test_hand.append(Card("a", "diamond"))
-test_hand.append(Card("a", "heart"))
-test_hand.append(Card("a", "spade"))
-count_meld(test_hand)
+main()
